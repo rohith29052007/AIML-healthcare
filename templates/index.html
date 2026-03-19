@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Home - AI Healthcare Assistant{% endblock %}
+
+{% block content %}
+<section class="section">
+    <h1>Welcome to AI Healthcare Assistant</h1>
+    <p class="subtitle">Advanced symptom-based disease prediction using Artificial Intelligence</p>
+    
+    <div style="text-align: center; margin: 40px 0;">
+        <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
+            Search for your symptoms and get an intelligent health assessment powered by machine learning.
+        </p>
+        
+        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            <a href="/general_predict" class="btn btn-primary" style="padding: 15px 40px; font-size: 18px;">
+                🔍 Quick Symptom Check
+            </a>
+            <a href="/personal_predict" class="btn btn-secondary" style="padding: 15px 40px; font-size: 18px;">
+                👤 My Health Profile
+            </a>
+        </div>
+    </div>
+
+</section>
+
+<section class="section">
+    <h2>How It Works</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin: 30px 0;">
+        <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">🔎</div>
+            <h3>Step 1: Search Symptoms</h3>
+            <p>Search and select your current symptoms from our comprehensive symptom database.</p>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">⏱️</div>
+            <h3>Step 2: Duration Input</h3>
+            <p>Tell us how long you've experienced these symptoms for better accuracy.</p>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">🤖</div>
+            <h3>Step 3: AI Prediction</h3>
+            <p>Our AI analyzes your symptoms and provides disease predictions with confidence scores.</p>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">📋</div>
+            <h3>Step 4: Results & Advice</h3>
+            <p>Get detailed results with top 3 disease predictions and medical guidance.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <h2>Key Features</h2>
+    <ul style="font-size: 16px; line-height: 2;">
+        <li>✅ <strong>AI-Powered Diagnosis:</strong> Uses 754 diseases and 377 symptoms for accurate predictions</li>
+        <li>✅ <strong>Symptom Search:</strong> Easy search and filter from extensive symptom database</li>
+        <li>✅ <strong>Duration-Based Analysis:</strong> Adjusts predictions based on symptom duration (acute vs chronic)</li>
+        <li>✅ <strong>Personal Health Profiles:</strong> Track your health history and predictions over time</li>
+        <li>✅ <strong>Risk Assessment:</strong> Get personalized risk levels based on your health profile</li>
+        <li>✅ <strong>70% Accuracy:</strong> Trained on 246K+ medical records for reliable predictions</li>
+    </ul>
+</section>
+
+<section class="section" style="background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%); border-left: 5px solid #0066cc;">
+    <h2>⚕️ Medical Disclaimer</h2>
+    <p style="color: #666;">
+        This application is designed as an educational tool and support system. 
+        <strong>It is NOT a substitute for professional medical diagnosis or treatment.</strong> 
+        Always consult with a qualified healthcare professional for accurate diagnosis and treatment of any health condition.
+    </p>
+</section>
+{% endblock %}

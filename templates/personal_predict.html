@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}My Health - AI Healthcare Assistant{% endblock %}
+
+{% block content %}
+<section class="section">
+    <h1>👤 My Health Profile</h1>
+    <p class="subtitle">Create or load your personal health profile for personalized predictions</p>
+
+    <!-- Profile Selection/Creation -->
+    <div id="profile-section">
+        {% if profiles %}
+        <h3>Load Existing Profile</h3>
+        <div style="margin-bottom: 30px;">
+            {% for profile in profiles %}
+            <button class="btn btn-secondary" onclick="loadProfile('{{ profile.replace('.json', '') }}')" style="margin: 5px;">
+                {{ profile.replace('profile_', '').replace('.json', '').title() }}
+            </button>
+            {% endfor %}
+        </div>
+        <hr style="margin: 30px 0;">
+        {% endif %}
+
+        <h3>Create New Profile</h3>
+        <form id="profile-form" style="max-width: 500px;">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label for="age">Age *</label>
+                <input type="number" id="age" name="age" required placeholder="Enter your age" min="1" max="150">
+            </div>
+
+            <div class="form-group">
+                <label for="diseases">Previous Diseases (comma-separated)</label>
+                <textarea id="diseases" name="diseases" placeholder="E.g., diabetes, hypertension, asthma" rows="3"></textarea>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="createProfile()">
+                Create Profile
+            </button>
+        </form>
+    </div>
+
+    <!-- Prediction Section (shown after profile is selected) -->
+    <div id="prediction-section" style="display: none; margin-top: 40px;">
+        <div id="profile-info" style="background: #e8f0ff; padding: 20px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0066cc;">
+        </div>
+
+        <!-- Duration Selection -->
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">How long have you had these symptoms?</h3>
+        <div class="duration-options">
+            <div class="duration-option">
+                <input type="radio" id="duration-1-2" name="duration" value="1-2" checked>
+                <label for="duration-1-2">Less than 3 days (1-2 days)</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" id="duration-3-7" name="duration" value="3-7">
+                <label for="duration-3-7">3-7 days (1 week)</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" id="duration-1-2w" name="duration" value="1-2w">
+                <label for="duration-1-2w">1-2 weeks</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" id="duration-2-4w" name="duration" value="2-4w">
+                <label for="duration-2-4w">2-4 weeks</label>
+            </div>
+            <div class="duration-option">
+                <input type="radio" id="duration-4plus" name="duration" value="4+w">
+                <label for="duration-4plus">More than 4 weeks</label>
+            </div>
+        </div>
+
+        <!-- Symptom Search & Selection -->
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">Select Your Symptoms</h3>
+        
+        <div class="symptom-search">
+            <input 
+                type="text" 
+                id="symptom-search" 
+                class="search-input" 
+                placeholder="Search symptoms..."
+                autocomplete="off"
+            >
+            <div id="search-results" class="search-results"></div>
+        </div>
+
+        <div id="selected-symptoms" class="symptoms-grid"></div>
+
+        <!-- Buttons -->
+        <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap;">
+            <button class="btn btn-danger" onclick="changeProfile()">Change Profile</button>
+            <button id="clear-btn" class="btn btn-danger" onclick="clearSymptoms()">Clear All</button>
+            <button id="predict-btn" class="btn btn-secondary" onclick="makePrediction()">Predict & Save</button>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-section" style="display: none; margin-top: 40px;">
+        <div id="results-content"></div>
+        <button class="btn btn-secondary" onclick="resetForm()" style="margin-top: 30px;">
+            New Prediction
+        </button>
+    </div>
+</section>
+
+<script>
+let allSymptoms = {{ symptoms | tojson }};
+let selectedSymptoms = {};
+let currentProfile = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    setupSymptomSearch();
+});
+
+// Profile Management
+async function createProfile() {
+    const name = document.getElementById('name').value.trim();
+    const age = parseInt(document.getElementById('age').value);
+    const diseases = document.getElementById('diseases').value;
+
+    if (!name || !age) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const response = await apiCall('/profile/create', 'POST', {
+            name: name,
+            age: age,
+            previous_diseases: diseases
+        });
+
+        if (response.success) {
+            currentProfile = response.profile;
+            showPredictionSection();
+        } else {
+            alert('Error: ' + response.error);
+        }
+    } catch (error) {
+        console.error('Profile creation error:', error);
+        alert('Failed to create profile');
+    }
+}
+
+async function loadProfile(profileName) {
+    try {
+        const response = await apiCall(`/profile/load/${profileName}`);
+
+        if (response.success) {
+            currentProfile = response.profile;
+            showPredictionSection();
+        } else {
+            alert('Error: ' + response.error);
+        }
+    } catch (error) {
+        console.error('Profile load error:', error);
+        alert('Failed to load profile');
+    }
+}
+
+function showPredictionSection() {
+    document.getElementById('profile-section').style.display = 'none';
+    document.getElementById('prediction-section').style.display = 'block';
+    
+    // Display profile info
+    const diseases = currentProfile.previous_diseases.length > 0 
+        ? currentProfile.previous_diseases.join(', ') 
+        : 'None';
+    
+    document.getElementById('profile-info').innerHTML = `
+        <strong>Profile:</strong> ${currentProfile.name}, Age: ${currentProfile.age}<br>
+        <strong>Previous Diseases:</strong> ${diseases}
+    `;
+}
+
+function changeProfile() {
+    currentProfile = null;
+    selectedSymptoms = {};
+    document.getElementById('profile-section').style.display = 'block';
+    document.getElementById('prediction-section').style.display = 'none';
+    document.getElementById('results-section').style.display = 'none';
+}
+
+// Symptom Search Functionality
+function setupSymptomSearch() {
+    const searchInput = document.getElementById('symptom-search');
+    const searchResults = document.getElementById('search-results');
+
+    searchInput.addEventListener('input', async function(e) {
+        const query = e.target.value.trim();
+        
+        if (query.length < 2) {
+            searchResults.classList.remove('active');
+            return;
+        }
+
+        try {
+            const response = await apiCall(`/search_symptoms?q=${encodeURIComponent(query)}`);
+            
+            if (response.results && response.results.length > 0) {
+                let html = '';
+                response.results.forEach(result => {
+                    html += `
+                        <div class="search-result-item" onclick="selectSymptomFromSearch('${result.name}', '${result.display}')">
+                            ${result.display}
+                        </div>
+                    `;
+                });
+                searchResults.innerHTML = html;
+                searchResults.classList.add('active');
+            } else {
+                searchResults.classList.remove('active');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target !== searchInput && e.target !== searchResults) {
+            searchResults.classList.remove('active');
+        }
+    });
+}
+
+function selectSymptomFromSearch(symptomKey, displayName) {
+    addSymptom(symptomKey, displayName);
+    document.getElementById('symptom-search').value = '';
+    document.getElementById('search-results').classList.remove('active');
+}
+
+function addSymptom(symptomKey, displayName) {
+    if (!selectedSymptoms[symptomKey]) {
+        selectedSymptoms[symptomKey] = displayName;
+        renderSelectedSymptoms();
+    }
+}
+
+function removeSymptom(symptomKey) {
+    delete selectedSymptoms[symptomKey];
+    renderSelectedSymptoms();
+}
+
+function renderSelectedSymptoms() {
+    const container = document.getElementById('selected-symptoms');
+    
+    if (Object.keys(selectedSymptoms).length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; color: #999;">No symptoms selected yet. Use search above.</p>';
+        return;
+    }
+
+    let html = '';
+    for (const [key, display] of Object.entries(selectedSymptoms)) {
+        html += `
+            <div class="symptom-item">
+                <label style="flex: 1; margin: 0;">${display}</label>
+                <button class="btn" style="padding: 5px 10px; background: #cc0000; color: white; border-radius: 3px; border: none; cursor: pointer;" 
+                        onclick="removeSymptom('${key}')">✕</button>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+}
+
+function clearSymptoms() {
+    selectedSymptoms = {};
+    renderSelectedSymptoms();
+}
+
+async function makePrediction() {
+    if (Object.keys(selectedSymptoms).length === 0) {
+        alert('Please select at least one symptom');
+        return;
+    }
+
+    const duration = document.querySelector('input[name="duration"]:checked').value;
+    
+    const symptomsDict = {};
+    for (const key of allSymptoms) {
+        symptomsDict[key] = selectedSymptoms.hasOwnProperty(key) ? 1 : 0;
+    }
+
+    try {
+        document.getElementById('predict-btn').disabled = true;
+        document.getElementById('predict-btn').innerHTML = '<span class="loading"></span> Analyzing...';
+
+        const response = await apiCall('/predict', 'POST', {
+            symptoms: symptomsDict,
+            duration: duration
+        });
+
+        if (response.success) {
+            // Save to profile
+            const saveResponse = await apiCall('/profile/save_prediction', 'POST', {
+                disease: response.predicted_disease,
+                confidence: response.confidence,
+                duration: duration
+            });
+
+            if (saveResponse.success) {
+                displayResults(response, duration, saveResponse.risk_level, saveResponse.risk_score);
+            }
+        } else {
+            alert('Error: ' + response.error);
+        }
+    } catch (error) {
+        console.error('Prediction error:', error);
+        alert('Failed to make prediction. Please try again.');
+    } finally {
+        document.getElementById('predict-btn').disabled = false;
+        document.getElementById('predict-btn').innerHTML = 'Predict & Save';
+    }
+}
+
+function displayResults(result, duration, riskLevel, riskScore) {
+    const durationText = {
+        '1-2': 'Less than 3 days (1-2 days)',
+        '3-7': '3-7 days (1 week)',
+        '1-2w': '1-2 weeks',
+        '2-4w': '2-4 weeks',
+        '4+w': 'More than 4 weeks'
+    }[duration] || duration;
+
+    const riskClass = riskLevel === 'HIGH' ? 'risk-high' : (riskLevel === 'MEDIUM' ? 'risk-medium' : 'risk-low');
+
+    let top3Html = '';
+    result.top_3.forEach((disease, index) => {
+        const percentage = disease.probability;
+        top3Html += `
+            <div class="disease-option">
+                <span class="disease-name">${index + 1}. ${formatDiseaseName(disease.disease)}</span>
+                <span class="disease-probability">${percentage.toFixed(2)}%</span>
+            </div>
+        `;
+    });
+
+    // Build solutions HTML
+    let solutionsHtml = '';
+    if (result.solutions && Object.keys(result.solutions).length > 0) {
+        const sol = result.solutions;
+        
+        solutionsHtml = `
+            <div style="margin-top: 30px; border-top: 2px solid #0066cc; padding-top: 20px;">
+                <h3 style="color: #0066cc; margin-bottom: 20px;">💡 Solutions & Recommendations</h3>
+                
+                <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin-top: 0; color: #0066cc;">About this condition:</h4>
+                    <p style="margin: 10px 0;">${sol.description || ''}</p>
+                </div>
+        `;
+        
+        // Treatments
+        if (sol.treatments && sol.treatments.length > 0) {
+            solutionsHtml += `
+                <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1e90ff;">
+                    <h4 style="margin-top: 0; color: #1e90ff;">🏥 Recommended Treatments:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        ${sol.treatments.map(t => `<li style="margin-bottom: 8px;">${t}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // Home Remedies
+        if (sol.home_remedies && sol.home_remedies.length > 0) {
+            solutionsHtml += `
+                <div style="background: #f0fff0; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #228b22;">
+                    <h4 style="margin-top: 0; color: #228b22;">🏠 Home Remedies:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        ${sol.home_remedies.map(h => `<li style="margin-bottom: 8px;">${h}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // Medications
+        if (sol.medications && sol.medications.length > 0) {
+            solutionsHtml += `
+                <div style="background: #fff0f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc143c;">
+                    <h4 style="margin-top: 0; color: #dc143c;">💊 Suggested Medications:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        ${sol.medications.map(m => `<li style="margin-bottom: 8px;">${m}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // Prevention
+        if (sol.prevention && sol.prevention.length > 0) {
+            solutionsHtml += `
+                <div style="background: #fffacd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffa500;">
+                    <h4 style="margin-top: 0; color: #ff8c00;">🛡️ Prevention Tips:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        ${sol.prevention.map(p => `<li style="margin-bottom: 8px;">${p}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // When to see doctor
+        if (sol.when_to_see_doctor && sol.when_to_see_doctor.length > 0) {
+            solutionsHtml += `
+                <div style="background: #fff5ee; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff4500;">
+                    <h4 style="margin-top: 0; color: #ff4500;">⚠️ When to See a Doctor:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        ${sol.when_to_see_doctor.map(w => `<li style="margin-bottom: 8px;">${w}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // Duration and severity info
+        if (sol.duration || sol.severity) {
+            solutionsHtml += `
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    ${sol.duration ? `<p><strong>Average Duration:</strong> ${sol.duration}</p>` : ''}
+                    ${sol.severity ? `<p><strong>Severity Level:</strong> <span style="padding: 4px 10px; border-radius: 4px; background: ${sol.severity === 'High' ? '#ffcccc' : sol.severity === 'Medium' ? '#ffeecc' : '#ccffcc'}; color: ${sol.severity === 'High' ? '#cc0000' : sol.severity === 'Medium' ? '#ff8c00' : '#008000'}; font-weight: bold;">${sol.severity}</span></p>` : ''}
+                </div>
+            `;
+        }
+        
+        solutionsHtml += `</div>`;
+    }
+
+    const resultsHtml = `
+        <div class="result-card">
+            <div class="result-disease">${formatDiseaseName(result.predicted_disease)}</div>
+            
+            <div class="result-confidence">
+                Confidence: <strong>${result.confidence.toFixed(2)}%</strong>
+            </div>
+            
+            <div class="confidence-bar">
+                <div class="confidence-fill" style="width: ${Math.min(result.confidence, 100)}%"></div>
+            </div>
+            
+            <div style="font-size: 14px; color: #666; margin-top: 10px;">
+                <strong>Symptom Duration:</strong> ${durationText}<br>
+                <strong>Your Risk Level:</strong> <span class="${riskClass}">${riskLevel}</span> (Score: ${riskScore}/100)
+            </div>
+            
+            <div class="top-3-diseases">
+                <h4 style="color: #0066cc; margin-bottom: 15px;">Alternative Disease Possibilities:</h4>
+                ${top3Html}
+            </div>
+            
+            ${solutionsHtml}
+            
+            <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
+                <strong>⚠️ Important:</strong> This prediction has been saved to your profile. 
+                Please consult a qualified healthcare professional for proper diagnosis and treatment.
+            </div>
+        </div>
+    `;
+
+    document.getElementById('prediction-section').style.display = 'none';
+    document.getElementById('results-section').style.display = 'block';
+    document.getElementById('results-content').innerHTML = resultsHtml;
+}
+
+function resetForm() {
+    clearSymptoms();
+    document.getElementById('prediction-section').style.display = 'block';
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('symptom-search').focus();
+}
+</script>
+{% endblock %}

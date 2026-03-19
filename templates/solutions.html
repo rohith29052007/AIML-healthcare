@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solutions for {{ disease | capitalize_words }} - AI Healthcare</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar h1 {
+            font-size: 2em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .navbar p {
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .disease-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .disease-header h2 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 0.5rem;
+            text-transform: capitalize;
+        }
+        
+        .disease-header p {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .severity-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+        
+        .severity-high {
+            background-color: #ff4757;
+            color: white;
+        }
+        
+        .severity-medium {
+            background-color: #ffa502;
+            color: white;
+        }
+        
+        .severity-low {
+            background-color: #2ed573;
+            color: white;
+        }
+        
+        .duration {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background-color: #dfe6e9;
+            color: #2f3542;
+            font-weight: bold;
+        }
+        
+        .solutions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .solution-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+        }
+        
+        .solution-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .solution-card.treatments {
+            border-left-color: #ff4757;
+        }
+        
+        .solution-card.remedies {
+            border-left-color: #2ed573;
+        }
+        
+        .solution-card.medications {
+            border-left-color: #ffa502;
+        }
+        
+        .solution-card.warning {
+            border-left-color: #ff6348;
+        }
+        
+        .solution-card.prevention {
+            border-left-color: #00b894;
+        }
+        
+        .solution-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .solution-card li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .solution-card li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .warning-section .warning-item {
+            background-color: #fff3cd;
+            border-left: 4px solid #ff6348;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .info-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .info-item strong {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+        
+        .info-item span {
+            display: block;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.8rem 1.5rem;
+            background-color: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        
+        .back-button:hover {
+            background-color: #764ba2;
+        }
+        
+        .disclaimer {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin: 2rem 0;
+            margin-top: 2rem;
+        }
+        
+        .disclaimer strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .disclaimer p {
+            color: #856404;
+            font-size: 0.95em;
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .solutions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .disease-header h2 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🏥 AI Healthcare Assistant</h1>
+        <p>Treatment Guide & Recommendations</p>
+    </div>
+    
+    <div class="container">
+        <div class="disease-header">
+            <h2>{{ disease | capitalize_words }}</h2>
+            <p>{{ solutions.description }}</p>
+            
+            <div>
+                {% if 'High' in solutions.severity or 'high' in solutions.severity.lower() %}
+                    <span class="severity-indicator severity-high">🔴 {{ solutions.severity }}</span>
+                {% elif 'Medium' in solutions.severity or 'medium' in solutions.severity.lower() %}
+                    <span class="severity-indicator severity-medium">🟠 {{ solutions.severity }}</span>
+                {% else %}
+                    <span class="severity-indicator severity-low">🟢 {{ solutions.severity }}</span>
+                {% endif %}
+                
+                <span class="duration">⏱️ Duration: {{ solutions.duration }}</span>
+            </div>
+        </div>
+        
+        <div class="solutions-grid">
+            <!-- Treatments -->
+            <div class="solution-card treatments">
+                <h3><span class="emoji">💊</span>Recommended Treatments</h3>
+                <ul>
+                    {% for treatment in solutions.treatments %}
+                        <li>{{ treatment }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Home Remedies -->
+            <div class="solution-card remedies">
+                <h3><span class="emoji">🏡</span>Home Remedies</h3>
+                <ul>
+                    {% for remedy in solutions.home_remedies %}
+                        <li>{{ remedy }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Medications -->
+            <div class="solution-card medications">
+                <h3><span class="emoji">💉</span>Common Medications</h3>
+                <ul>
+                    {% for med in solutions.medications %}
+                        <li>{{ med }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- When to See Doctor -->
+            <div class="solution-card warning warning-section">
+                <h3><span class="emoji">⚠️</span>When to See a Doctor</h3>
+                {% for warning in solutions.when_to_see_doctor %}
+                    <div class="warning-item">{{ warning }}</div>
+                {% endfor %}
+            </div>
+            
+            <!-- Prevention -->
+            <div class="solution-card prevention">
+                <h3><span class="emoji">🛡️</span>Prevention Tips</h3>
+                <ul>
+                    {% for prevention in solutions.prevention %}
+                        <li>{{ prevention }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <div class="disclaimer">
+            <strong>⚕️ Important Medical Disclaimer</strong>
+            <p>
+                The information provided here is for educational purposes only and should not be used for self-diagnosis. 
+                This is not a substitute for professional medical advice, diagnosis, or treatment. Always consult with a 
+                qualified healthcare professional before starting any new treatment or medication. In case of emergency, 
+                please call emergency services or visit the nearest hospital immediately.
+            </p>
+        </div>
+        
+        <a href="/" class="back-button">← Back to Prediction</a>
+    </div>
+</body>
+</html>
