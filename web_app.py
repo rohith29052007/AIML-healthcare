@@ -24,18 +24,26 @@ models_path = os.path.join(project_root, "models", "trained_models.joblib")
 profiles_dir = os.path.join(project_root, "profiles")
 
 # Initialize predictor
+predictor = None
+health_manager = None
+
 try:
     predictor = DiseasePredictor(models_path)
     health_manager = PersonalHealthProfile(profiles_dir)
     print("✓ Models loaded successfully!")
+except FileNotFoundError as e:
+    print(f"⚠ Warning: {e}")
+    print("Models will be unavailable. Please train models locally and upload them.")
 except Exception as e:
     print(f"✗ Error loading models: {e}")
-    exit(1)
+    print("Continuing with limited functionality...")
 
 
 @app.route('/')
 def home():
     """Home page"""
+    if not predictor:
+        return render_template('index.html', symptoms=[], error="Models not loaded. Please upload trained_models.joblib to models/ directory.")
     symptoms = sorted(predictor.get_all_symptoms())
     return render_template('index.html', symptoms=symptoms)
 
@@ -43,6 +51,9 @@ def home():
 @app.route('/search_symptoms')
 def search_symptoms():
     """API endpoint for symptom search"""
+    if not predictor:
+        return jsonify({'results': [], 'error': 'Models not loaded'})
+    
     query = request.args.get('q', '').lower()
     symptoms = predictor.get_all_symptoms()
     
@@ -57,6 +68,12 @@ def search_symptoms():
 @app.route('/predict', methods=['POST'])
 def predict():
     """Predict disease based on symptoms"""
+    if not predictor:
+        return jsonify({
+            'success': False,
+            'error': 'Models not available. Please upload trained models.'
+        }), 503
+    
     try:
         data = request.json
         selected_symptoms = data.get('symptoms', {})

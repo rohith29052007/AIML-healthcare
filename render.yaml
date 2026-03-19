@@ -5,7 +5,7 @@ services:
     region: oregon
     plan: free
     branch: main
-    buildCommand: "pip install -r requirements.txt && python src/train_model.py"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn web_app:app"
     envVars:
       - key: PYTHON_VERSION
