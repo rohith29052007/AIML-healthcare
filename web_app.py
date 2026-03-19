@@ -20,10 +20,13 @@ app = Flask(__name__)
 app.secret_key = 'aihealth_secret_key_2024'
 
 # Get paths
-project_root = Path(__file__).parent
-models_dir = os.path.join(project_root, "models")
+project_root = Path(__file__).parent.absolute()
+models_dir = os.path.join(str(project_root), "models")
 models_path = os.path.join(models_dir, "trained_models.joblib")
-profiles_dir = os.path.join(project_root, "profiles")
+profiles_dir = os.path.join(str(project_root), "profiles")
+
+print(f"Project root: {project_root}")
+print(f"Models directory: {models_dir}")
 
 # Google Drive file ID for the trained model
 GOOGLE_DRIVE_FILE_ID = "1fwATKeKNIifk3NUz28jeYWRgejbaGmUJ"

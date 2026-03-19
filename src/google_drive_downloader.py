@@ -22,19 +22,27 @@ def download_from_google_drive(file_id, output_path):
         # Ensure directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        # Google Drive direct download URL
-        url = f"https://drive.google.com/uc?id={file_id}&export=download"
+        # Google Drive direct download URL with confirmation bypass
+        url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm=t"
         
         print(f"Downloading model from Google Drive: {file_id}")
         
-        # Download with streaming
-        response = requests.get(url, stream=True, timeout=300)
+        # Download with streaming and timeout
+        session = requests.Session()
+        response = session.get(url, stream=True, timeout=300)
         response.raise_for_status()
         
-        # Save file
+        # Get actual file size
         total_size = int(response.headers.get('content-length', 0))
-        downloaded = 0
         
+        if total_size == 0:
+            print("⚠ Warning: Could not determine file size. File may be corrupted or download failed.")
+            return False
+        
+        print(f"File size: {total_size / 1024 / 1024:.1f}MB")
+        
+        # Save file
+        downloaded = 0
         with open(output_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
@@ -45,6 +53,13 @@ def download_from_google_drive(file_id, output_path):
                         print(f"  Progress: {percent:.1f}% ({downloaded / 1024 / 1024:.1f}MB / {total_size / 1024 / 1024:.1f}MB)", end='\r')
         
         print(f"\n✓ Model downloaded successfully: {output_path}")
+        
+        # Verify file was downloaded
+        if os.path.getsize(output_path) == 0:
+            print("✗ Error: Downloaded file is empty!")
+            os.remove(output_path)
+            return False
+        
         return True
         
     except requests.exceptions.Timeout:
