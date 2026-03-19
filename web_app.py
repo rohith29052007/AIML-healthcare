@@ -117,6 +117,9 @@ def predict():
 @app.route('/general_predict', methods=['GET', 'POST'])
 def general_predict():
     """General prediction page"""
+    if not predictor:
+        return render_template('general_predict.html', symptoms=[], error="Models not loaded. Please check back later.")
+    
     if request.method == 'GET':
         symptoms = sorted(predictor.get_all_symptoms())
         return render_template('general_predict.html', symptoms=symptoms)
@@ -127,9 +130,12 @@ def general_predict():
 @app.route('/personal_predict', methods=['GET', 'POST'])
 def personal_predict():
     """Personal prediction page"""
+    if not predictor:
+        return render_template('personal_predict.html', symptoms=[], profiles=[], error="Models not loaded. Please check back later.")
+    
     if request.method == 'GET':
         symptoms = sorted(predictor.get_all_symptoms())
-        profiles = health_manager.get_available_profiles()
+        profiles = health_manager.get_available_profiles() if health_manager else []
         return render_template('personal_predict.html', symptoms=symptoms, profiles=profiles)
     
     # Handle prediction

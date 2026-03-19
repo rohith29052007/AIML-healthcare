@@ -7,6 +7,12 @@
     <h1>🔍 General Disease Prediction</h1>
     <p class="subtitle">Search and select your symptoms, then get disease predictions</p>
 
+    {% if error %}
+    <div style="background-color: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <p style="color: #c62828; margin: 0;"><strong>⚠ {{ error }}</strong></p>
+    </div>
+    {% endif %}
+
     <div id="form-section">
         <!-- Duration Selection -->
         <h3 style="margin-top: 30px; margin-bottom: 15px;">How long have you had these symptoms?</h3>
