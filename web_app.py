@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from predictor import DiseasePredictor
 from personal_health import PersonalHealthProfile
+from google_drive_downloader import ensure_model_exists
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -20,20 +21,32 @@ app.secret_key = 'aihealth_secret_key_2024'
 
 # Get paths
 project_root = Path(__file__).parent
-models_path = os.path.join(project_root, "models", "trained_models.joblib")
+models_dir = os.path.join(project_root, "models")
+models_path = os.path.join(models_dir, "trained_models.joblib")
 profiles_dir = os.path.join(project_root, "profiles")
+
+# Google Drive file ID for the trained model
+GOOGLE_DRIVE_FILE_ID = "1fwATKeKNIifk3NUz28jeYWRgejbaGmUJ"
+
+# Try to ensure model exists (download from Google Drive if needed)
+print("Checking for trained models...")
+model_file = ensure_model_exists(models_dir, GOOGLE_DRIVE_FILE_ID)
 
 # Initialize predictor
 predictor = None
 health_manager = None
 
 try:
-    predictor = DiseasePredictor(models_path)
-    health_manager = PersonalHealthProfile(profiles_dir)
-    print("✓ Models loaded successfully!")
+    if model_file and os.path.exists(model_file):
+        predictor = DiseasePredictor(model_file)
+        health_manager = PersonalHealthProfile(profiles_dir)
+        print("✓ Models loaded successfully!")
+    else:
+        print("⚠ Warning: Models file not found and could not be downloaded")
+        print("Prediction features will be unavailable")
 except FileNotFoundError as e:
     print(f"⚠ Warning: {e}")
-    print("Models will be unavailable. Please train models locally and upload them.")
+    print("Models will be unavailable. Please ensure Google Drive link is accessible.")
 except Exception as e:
     print(f"✗ Error loading models: {e}")
     print("Continuing with limited functionality...")
