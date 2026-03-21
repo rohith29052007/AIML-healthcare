@@ -13,7 +13,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from predictor import DiseasePredictor
 from personal_health import PersonalHealthProfile
-from google_drive_downloader import ensure_model_exists
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -28,12 +27,9 @@ profiles_dir = os.path.join(str(project_root), "profiles")
 print(f"Project root: {project_root}")
 print(f"Models directory: {models_dir}")
 
-# Google Drive file ID for the trained model
-GOOGLE_DRIVE_FILE_ID = "1fwATKeKNIifk3NUz28jeYWRgejbaGmUJ"
-
-# Try to ensure model exists (download from Google Drive if needed)
+# Check for trained models locally
 print("Checking for trained models...")
-model_file = ensure_model_exists(models_dir, GOOGLE_DRIVE_FILE_ID)
+model_file = models_path if os.path.exists(models_path) else None
 
 # Initialize predictor
 predictor = None
@@ -45,11 +41,12 @@ try:
         health_manager = PersonalHealthProfile(profiles_dir)
         print("✓ Models loaded successfully!")
     else:
-        print("⚠ Warning: Models file not found and could not be downloaded")
+        print("⚠ Warning: Models file not found at:", models_path)
+        print("Please train the models first by running: python src/train_model.py")
         print("Prediction features will be unavailable")
 except FileNotFoundError as e:
     print(f"⚠ Warning: {e}")
-    print("Models will be unavailable. Please ensure Google Drive link is accessible.")
+    print("Models will be unavailable.")
 except Exception as e:
     print(f"✗ Error loading models: {e}")
     print("Continuing with limited functionality...")
@@ -253,7 +250,20 @@ if __name__ == '__main__':
     print("AI HEALTHCARE ASSISTANT - WEB SERVER")
     print("="*60)
     print("\nStarting web server...")
-    print("📱 Open browser: http://localhost:5000")
+    
+    # Get PORT from environment or use default
+    port = int(os.environ.get('PORT', 5000))
+    
+    # Determine host based on environment
+    host = '0.0.0.0' if os.environ.get('RENDER') else 'localhost'
+    
+    if host == 'localhost':
+        print("📱 Open browser: http://localhost:5000")
+    else:
+        print(f"🚀 Server running on port {port} (Render deployment)")
+    
     print("="*60 + "\n")
     
-    app.run(debug=True, host='localhost', port=5000)
+    # Debug mode only for local development
+    debug_mode = not os.environ.get('RENDER')
+    app.run(debug=debug_mode, host=host, port=port)

@@ -25,6 +25,7 @@ venv/
 env/
 ENV/
 .venv
+.venv-1
 
 # IDE
 .vscode/
@@ -32,18 +33,36 @@ ENV/
 *.swp
 *.swo
 *~
-.DS_Store
-
-# Project specific
-models/trained_models.joblib
-profiles/
-*.json
-logs/
-
-# Large files
-res/*.csv
-*.csv
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Exclude datasets
+res/
+*.csv
+
+# Exclude user profiles (will be created at runtime)
+profiles/
+*.json
+
+# Exclude documentation files
+*.md
+!README.md
+
+# Keep trained models for production
+# models/trained_models.joblib IS INCLUDED
+
+# Exclude training files (not needed in production)
+src/train_model.py
+src/gui_app.py
+src/main.py
+src/recommendations.py
+
+# Exclude training code (not needed for production)
+src/train_model.py
+src/gui_app.py
+src/main.py
+
+# Exclude logs
+logs/

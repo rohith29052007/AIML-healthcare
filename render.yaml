@@ -1,12 +1,12 @@
 services:
   - type: web
-    name: aiml-healthcare
+    name: aiml-healthcare-assistant
     env: python
-    region: oregon
     plan: free
-    branch: main
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn web_app:app"
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn web_app:app
     envVars:
       - key: PYTHON_VERSION
-        value: "3.9"
+        value: 3.11.0
+      - key: PORT
+        value: 5000

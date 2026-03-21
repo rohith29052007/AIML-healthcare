@@ -1,103 +1,210 @@
-# AI Healthcare Assistant
+# AI Healthcare Assistant - Production Deployment
 
-A comprehensive Python machine learning project with a Graphical User Interface (GUI) for predicting diseases based on symptoms.
+A web-based disease prediction system using trained machine learning models. Users can input symptoms and receive disease predictions.
 
-## Project Overview
+## 🚀 Features
 
-The **AI Healthcare Assistant** is an intelligent system that uses machine learning algorithms to predict diseases based on symptoms selected by users. It provides both a general disease prediction mode and a personal healthcare prediction mode with health profile management.
+- **Web Interface**: Flask-based web application
+- **Disease Prediction**: Input symptoms → Get predicted diseases with probabilities
+- **Top 3 Predictions**: Shows the most likely diseases with confidence scores
+- **Personal Health Profiles**: Create user profiles and track prediction history
+- **Risk Assessment**: Categorizes risk levels (LOW/MEDIUM/HIGH)
 
-### Features
+## 📋 Prerequisites
 
-- **Machine Learning Models**: 
-  - Decision Tree Classifier
-  - Random Forest Classifier
-  - Support Vector Machine (SVM)
+- Python 3.8+
+- pip or conda
 
-- **GUI Application**:
-  - User-friendly Tkinter interface
-  - Home screen with multiple options
-  - General disease prediction
-  - Personal healthcare prediction with profile management
-  - Disease probability display (Top 3 predictions)
-  - Risk level assessment (LOW/MEDIUM/HIGH)
+## 🔧 Installation & Setup
 
-- **Personal Health Profiles**:
-  - Create and manage user profiles
-  - Store personal health information
-  - Track prediction history
-  - Risk score calculation based on disease history
-
-## Project Structure
-
-```
-AI_Healthcare_Assistant/
-│
-├── res/
-│   └── Disease and symptoms dataset.csv
-│
-├── models/
-│   └── trained_models.joblib (generated after training)
-│
-├── profiles/
-│   └── (user profiles stored as JSON files)
-│
-├── src/
-│   ├── train_model.py        # Model training script
-│   ├── predictor.py          # Disease prediction module
-│   ├── personal_health.py    # Health profile management
-│   ├── gui_app.py            # Tkinter GUI application
-│   └── main.py               # Application entry point
-│
-├── requirements.txt          # Python dependencies
-└── README.md                 # This file
+### 1. Clone Repository
+```bash
+git clone https://github.com/YOUR_USERNAME/aiml-healthcare.git
+cd aiml-healthcare
 ```
 
-## Installation
+### 2. Create Virtual Environment
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
 
-### Prerequisites
-- Python 3.7 or higher
-- pip (Python package manager)
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+```
 
-### Step 1: Install Dependencies
-
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-**Required packages:**
-- pandas: Data processing and analysis
-- numpy: Numerical computing
-- scikit-learn: Machine learning algorithms
-- joblib: Model serialization
+## 🎯 Running Locally
 
-### Step 2: Verify Dataset
-
-Ensure the dataset file exists at: `res/Disease and symptoms dataset.csv`
-
-The dataset should contain:
-- Column "diseases": Target label (disease names)
-- Remaining columns: Symptoms (binary values 0 or 1)
-
-## Usage
-
-### Step 1: Train the Models
-
-Before running the GUI application, you must train the machine learning models:
-
+### Start Web Application
 ```bash
-python src/train_model.py
+python web_app.py
 ```
 
-**Expected Output:**
+Then open your browser and visit:
 ```
-Loading dataset...
-Dataset shape: (X, Y)
-Columns: [list of columns]
-Features: [number]
-Diseases: [number]
-Disease classes: [list of diseases]
+http://localhost:5000
+```
 
-==================================================
+## 🌐 Deployment on Render
+
+### 1. Push to GitHub
+```bash
+git add .
+git commit -m "Deploy AI Healthcare Assistant"
+git push origin main
+```
+
+### 2. Deploy on Render
+1. Go to [render.com](https://render.com)
+2. Sign in with GitHub
+3. Create new **Web Service**
+4. Connect your repository
+5. Configure:
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn web_app:app`
+
+### 3. Live Application
+Your app will be available at:
+```
+https://aiml-healthcare-<random>.onrender.com
+```
+
+## 📁 Project Structure
+
+```
+aiml-healthcare/
+├── web_app.py              # Main Flask application
+├── requirements.txt        # Python dependencies
+├── Procfile                # Deployment configuration
+├── render.yaml             # Render service config
+├── models/
+│   └── trained_models.joblib   # Pre-trained ML models
+├── src/
+│   ├── predictor.py        # Disease prediction logic
+│   ├── personal_health.py  # User profile management
+│   └── recommendations.py  # Disease recommendations
+├── templates/
+│   ├── index.html          # Home page
+│   ├── general_predict.html    # Prediction interface
+│   ├── personal_predict.html   # Personal predictions
+│   └── base.html           # Base template
+└── README.md               # This file
+```
+
+## 🔮 How It Works
+
+1. **User Input**: Select symptoms from the available list
+2. **Model Inference**: Pre-trained ML models process the symptoms
+3. **Prediction**: System returns:
+   - Top 3 predicted diseases
+   - Probability/confidence scores
+   - Risk level assessment
+4. **Profile Management**: Save predictions to user profile (optional)
+
+## 📊 Models
+
+The system uses pre-trained machine learning models:
+- **Decision Tree Classifier**: Fast, interpretable predictions
+- **Random Forest**: Ensemble method for robust predictions
+- **XGBoost**: Gradient boosting for high accuracy
+
+All models are trained and saved in `models/trained_models.joblib`
+
+## 🎨 Web Interface
+
+### Available Endpoints
+
+| URL | Purpose |
+|-----|---------|
+| `/` | Home page |
+| `/general_predict` | General disease prediction |
+| `/personal_predict` | Personal health profile predictions |
+| `/search_symptoms` | Symptom search API |
+| `/predict` | Prediction API (POST) |
+| `/about` | About page |
+| `/contact` | Contact page |
+
+## ⚙️ Configuration
+
+### Environment Variables
+- `PORT`: Server port (default: 5000)
+- `RENDER`: Set automatically by Render
+
+### Model Organization
+Models and encoders are stored in `models/trained_models.joblib`:
+- Decision Tree model
+- Random Forest model
+- Feature names
+- Disease encoder/decoder
+
+## 📱 User Interface Modes
+
+### 1. General Prediction
+- Search and select symptoms from the complete symptom list
+- Get instant disease predictions
+- View top 3 diseases with probabilities
+
+### 2. Personal Health Profile
+- Create and manage user profiles
+- Save prediction history
+- Track risk scores over time
+- Personalized recommendations based on history
+
+## 🐛 Troubleshooting
+
+### Models not loading
+```
+Error: Models file not found
+```
+**Solution**: Ensure `models/trained_models.joblib` exists in the project root.
+
+### Port already in use
+```
+Address already in use
+```
+**Solution**: Change port or kill existing process:
+```bash
+# Windows
+netstat -ano | findstr :5000
+# Kill the process
+taskkill /PID <PID> /F
+```
+
+### Dependencies missing
+```
+ModuleNotFoundError
+```
+**Solution**: Reinstall dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## 📝 Notes
+
+- This is a **prediction-only** deployment (model inference)
+- Model training code is not included (uses pre-trained models)
+- User profiles are stored locally in `profiles/` directory
+
+## 🔐 Security
+
+- No sensitive user data is transmitted externally
+- All predictions processed locally
+- HTTPS recommended for production deployment
+
+## 📄 License
+
+This project is for educational purposes.
+
+---
+
+**Version**: 1.0 (Production)
+**Last Updated**: March 2026
 TRAINING MODELS
 ==================================================
 

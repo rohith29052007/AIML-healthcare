@@ -333,6 +333,12 @@ function displayResults(result, duration) {
                 <strong>Symptom Duration:</strong> ${durationText}
             </div>
             
+            ${Object.keys(selectedSymptoms).length < 3 ? `
+                <div style="margin-top: 15px; padding: 12px 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
+                    <strong>💡 Note:</strong> You've selected only ${Object.keys(selectedSymptoms).length} symptom(s). Adding more symptoms (e.g., nasal congestion, sore throat, body ache) will improve prediction accuracy.
+                </div>
+            ` : ''}
+            
             <div class="top-3-diseases">
                 <h4 style="color: #0066cc; margin-bottom: 15px;">Alternative Disease Possibilities:</h4>
                 ${top3Html}

@@ -37,10 +37,13 @@ class DiseasePredictor:
             self.models = data['models']
             self.feature_names = data['feature_names']
             self.disease_encoder = data['disease_encoder']
+            self.selector = data.get('selector', None)  # Load feature selector if available
             
-            print(f"✓ Models loaded successfully from {self.models_path}")
-            print(f"  Features: {len(self.feature_names)}")
-            print(f"  Diseases: {len(self.disease_encoder.classes_)}")
+            print(f"[OK] Models loaded successfully from {self.models_path}")
+            print(f"    Features: {len(self.feature_names)}")
+            print(f"    Diseases: {len(self.disease_encoder.classes_)}")
+            if self.selector:
+                print(f"    Selected features: {self.selector.n_features_in_}")
             
         except Exception as e:
             print(f"Error loading models: {e}")
@@ -62,6 +65,10 @@ class DiseasePredictor:
             # Create feature vector based on selected symptoms
             feature_vector = self._create_feature_vector(symptoms_dict)
             
+            # Apply feature selection if selector is available
+            if self.selector:
+                feature_vector = self.selector.transform(feature_vector.reshape(1, -1))[0]
+            
             # Ensure we use an available model
             if model_name not in self.models:
                 model_name = 'random_forest'  # Use RF by default
@@ -81,8 +88,8 @@ class DiseasePredictor:
                 # Normalize scores to probabilities
                 probabilities = self._normalize_scores(decision_scores)
             
-            # Adjust probabilities based on symptom duration
-            probabilities = self._adjust_by_duration(probabilities, duration)
+            # Adjust probabilities based on symptom duration AND selected symptoms
+            probabilities = self._adjust_by_duration(probabilities, duration, symptoms_dict)
             
             # Re-sort after adjustment
             top_3_indices = np.argsort(probabilities)[::-1][:3]
@@ -106,13 +113,14 @@ class DiseasePredictor:
             print(f"Error in prediction: {e}")
             return None
     
-    def _adjust_by_duration(self, probabilities, duration):
+    def _adjust_by_duration(self, probabilities, duration, symptoms_dict=None):
         """
-        Adjust disease probabilities based on symptom duration
+        Adjust disease probabilities based on symptom duration AND selected symptoms
         
         Args:
             probabilities: Array of disease probabilities
             duration: Duration category ('1-2', '3-7', '1-2w', '2-4w', '4+w')
+            symptoms_dict: Dictionary of all symptoms with 0/1 values (optional)
         
         Returns:
             Adjusted probability array
@@ -120,43 +128,81 @@ class DiseasePredictor:
         # Get all disease names
         diseases = self.disease_encoder.classes_
         
-        # Duration-based disease associations
-        # Acute conditions (1-2, 3-7 days): cold, flu, gastroenteritis
-        acute_keywords = ['cold', 'flu', 'influenza', 'gastroenteritis', 'gastritis', 
-                          'acute', 'viral', 'diarrhea', 'vomiting', 'nausea']
-        
-        # Chronic conditions (2+ weeks): tuberculosis, asthma, diabetes, hypertension
-        chronic_keywords = ['tuberculosis', 'asthma', 'diabetes', 'hypertension', 
-                            'chronic', 'arthritis', 'cancer', 'pneumonia', 'bronchitis']
-        
-        # Adjust based on duration
+        # Adjusted probability array
         adjusted = probabilities.copy()
         
+        # Determine symptom categories from selected symptoms (value = 1)
+        has_fever = symptoms_dict.get('fever', 0) == 1 if symptoms_dict else False
+        has_cough = symptoms_dict.get('cough', 0) == 1 if symptoms_dict else False
+        has_respiratory = any(symptoms_dict.get(s, 0) == 1 for s in ['cough', 'sore throat', 'nasal congestion', 'shortness of breath']) if symptoms_dict else False
+        has_chest_pain = any(symptoms_dict.get(s, 0) == 1 for s in ['sharp chest pain', 'chest tightness', 'palpitations', 'irregular heartbeat']) if symptoms_dict else False
+        has_gi = any(symptoms_dict.get(s, 0) == 1 for s in ['diarrhea', 'vomiting', 'nausea']) if symptoms_dict else False
+        
         if duration in ['1-2', '3-7']:  # Acute phase (1-7 days)
-            # Boost acute diseases, reduce chronic diseases
             for i, disease in enumerate(diseases):
                 disease_lower = disease.lower()
                 
-                # Boost acute conditions
-                if any(keyword in disease_lower for keyword in acute_keywords):
-                    adjusted[i] *= 1.3  # Boost by 30%
+                # CHEST PAIN PRIORITY: If user has chest pain symptoms, boost cardiac/chest diseases
+                if has_chest_pain:
+                    if any(kw in disease_lower for kw in ['angina', 'heart attack', 'heart failure', 'cardiac', 'pericarditis', 'myocarditis', 'infarction']):
+                        adjusted[i] *= 5.0  # Strong boost for cardiac conditions
+                    elif any(kw in disease_lower for kw in ['pulmonary', 'pneumothorax', 'pleurisy', 'bronchospasm']):
+                        adjusted[i] *= 3.0  # Moderate boost for respiratory chest issues
+                    elif any(kw in disease_lower for kw in ['cold', 'flu', 'gastroenteritis', 'anxiety']):
+                        adjusted[i] *= 0.05  # Strong penalty for non-cardiac conditions
+                    else:
+                        adjusted[i] *= 0.3  # General penalty for unrelated diseases
+                    continue
                 
-                # Reduce chronic conditions
-                if any(keyword in disease_lower for keyword in chronic_keywords):
-                    adjusted[i] *= 0.6  # Reduce by 40%
+                # RESPIRATORY PRIORITY: If user has respiratory symptoms (but no chest pain)
+                if has_respiratory:
+                    if any(kw in disease_lower for kw in ['cold', 'flu', 'influenza', 'bronchitis', 'bronchiolitis']):
+                        adjusted[i] *= 3.0  # Strong boost
+                    elif any(kw in disease_lower for kw in ['acute', 'viral', 'respiratory', 'cough']):
+                        adjusted[i] *= 1.5  # Moderate boost
+                    elif any(kw in disease_lower for kw in ['angina', 'heart', 'cardiac', 'diabetes']):
+                        adjusted[i] *= 0.2  # Penalty for unrelated
+                    continue
+                
+                # GI PRIORITY: If user has GI symptoms
+                if has_gi:
+                    if any(kw in disease_lower for kw in ['gastroenteritis', 'gastritis', 'diarrhea', 'cholera', 'appendicitis']):
+                        adjusted[i] *= 3.0
+                    elif any(kw in disease_lower for kw in ['cold', 'bronchitis', 'asthma', 'pneumonia']):
+                        adjusted[i] *= 0.2
+                    continue
+                
+                # Default behavior if no specific symptom category matched
+                if any(kw in disease_lower for kw in ['acute', 'viral']):
+                    adjusted[i] *= 1.5
+                if any(kw in disease_lower for kw in ['chronic', 'arthritis', 'cancer']):
+                    adjusted[i] *= 0.3
         
         elif duration in ['1-2w', '2-4w', '4+w']:  # Chronic phase (1+ weeks)
-            # Boost chronic diseases, reduce acute diseases
             for i, disease in enumerate(diseases):
                 disease_lower = disease.lower()
                 
-                # Boost chronic conditions
-                if any(keyword in disease_lower for keyword in chronic_keywords):
-                    adjusted[i] *= 1.4  # Boost by 40%
+                # CHEST PAIN PRIORITY in chronic setting
+                if has_chest_pain:
+                    if any(kw in disease_lower for kw in ['angina', 'heart failure', 'hypertension', 'cardiac']):
+                        adjusted[i] *= 4.0  # Strong boost
+                    elif any(kw in disease_lower for kw in ['cold', 'flu', 'influenza']):
+                        adjusted[i] *= 0.05  # Strong penalty
+                    continue
                 
-                # Reduce acute conditions
-                if any(keyword in disease_lower for keyword in acute_keywords):
-                    adjusted[i] *= 0.5  # Reduce by 50%
+                # RESPIRATORY with chronic duration -> Pneumonia, TB, COPD
+                if has_respiratory:
+                    if any(kw in disease_lower for kw in ['pneumonia', 'tuberculosis', 'copd', 'asthma', 'chronic bronchitis']):
+                        adjusted[i] *= 3.0
+                    elif any(kw in disease_lower for kw in ['cold', 'flu', 'influenza']):
+                        adjusted[i] *= 0.1
+                    continue
+                
+                # Default chronic behavior
+                if any(kw in disease_lower for kw in ['pneumonia', 'tuberculosis', 'asthma', 'diabetes', 'hypertension', 'chronic']):
+                    adjusted[i] *= 1.8
+                if any(kw in disease_lower for kw in ['cold', 'flu', 'influenza', 'gastroenteritis']):
+                    adjusted[i] *= 0.2
         
         # Re-normalize probabilities to sum to 1
         adjusted = adjusted / np.sum(adjusted)

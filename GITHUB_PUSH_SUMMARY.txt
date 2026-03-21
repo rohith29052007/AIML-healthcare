@@ -1,0 +1,52 @@
+# Files to Push to GitHub - Summary
+
+## ✅ WILL BE PUSHED (Essential Files)
+
+### Root Level:
+- `web_app.py` - Main Flask application
+- `requirements.txt` - Python dependencies
+- `Procfile` - For Render deployment
+- `render.yaml` - Render configuration
+- `README.md` - Project documentation
+- `.gitignore` - Ignore unnecessary files
+
+### src/ Folder:
+- `train_model.py` - Model training script
+- `predictor.py` - Disease prediction module
+- `personal_health.py` - Health profile management
+- `gui_app.py` - GUI application
+- `main.py` - Application entry point
+- `recommendations.py` - Disease recommendations module
+
+### templates/ Folder:
+- `base.html` - Base HTML template
+- `index.html` - Home page
+- `general_predict.html` - General prediction page
+- `personal_predict.html` - Personal prediction page
+- `about.html` - About page
+- `contact.html` - Contact page
+- `solutions.html` - Solutions page
+
+---
+
+## ❌ WON'T BE PUSHED (Excluded by .gitignore)
+
+### Excluded Folders:
+- `.venv/` - Virtual environment
+- `res/` - Dataset files (Disease and symptoms dataset.csv)
+- `profiles/` - User profile data
+- `models/trained_models.joblib` - Large model file
+- `__pycache__/` - Python cache
+
+### Excluded Files:
+- `.md` files except README.md
+  - DEPLOY_CHECKLIST.md
+  - GETTING_STARTED.md
+  - INSTALLATION.md
+  - PREDICTION_FIXES.md
+  - PROJECT_SUMMARY.md
+  - QUICKSTART.md
+  - RENDER_DEPLOY_GUIDE.md
+- All `.csv` files
+- `.pyc` files
+- IDE files (.vscode/, .idea/)
